@@ -1,0 +1,215 @@
+**Part 1: OpenVPN Server Setup**
+
+**1. Prerequisites:**
+
+* Two Kali Linux systems (or VMs): one for the server, one for the client.
+* Root or sudo privileges on both systems.
+* A static IP address or a dynamic DNS service for the server.
+
+**2. Install OpenVPN and EasyRSA:**
+
+* **Purpose:** Install OpenVPN and EasyRSA for certificate management.
+* **Commands (on the server):**
+
+    ```bash
+    sudo apt update
+    sudo apt install openvpn easy-rsa -y
+    ```
+
+**3. Generate Certificates and Keys (using EasyRSA):**
+
+* **Purpose:** Create the necessary certificates and keys for secure communication.
+* **Steps:**
+    1.  **Copy EasyRSA scripts:**
+
+        ```bash
+        make-cadir ~/openvpn-ca
+        cd ~/openvpn-ca
+        ```
+
+    2.  **Initialize the PKI:**
+
+        ```bash
+        ./easyrsa init-pki
+        ```
+
+    3.  **Build the Certificate Authority (CA):**
+
+        ```bash
+        ./easyrsa build-ca nopass
+        ```
+
+    4.  **Generate the server certificate and key:**
+
+        ```bash
+        ./easyrsa build-server-full server nopass
+        ```
+
+    5.  **Generate the client certificate and key:**
+
+        ```bash
+        ./easyrsa build-client-full client1 nopass
+        ```
+
+    6.  **Generate Diffie-Hellman parameters:**
+
+        ```bash
+        ./easyrsa gen-dh
+        ```
+
+    7.  **Copy the generated files to the OpenVPN directory:**
+
+        ```bash
+        sudo cp pki/ca.crt /etc/openvpn/server
+        sudo cp pki/issued/server.crt /etc/openvpn/server
+        sudo cp pki/private/server.key /etc/openvpn/server
+        sudo cp pki/dh.pem /etc/openvpn/server
+        sudo cp pki/issued/client1.crt /etc/openvpn/server
+        sudo cp pki/private/client1.key /etc/openvpn/server
+        ```
+
+**4. Configure OpenVPN Server:**
+
+* **Purpose:** Set up the OpenVPN server configuration.
+* **Steps:**
+    1.  **Copy the sample server configuration:**
+
+        ```bash
+        sudo cp /usr/share/doc/openvpn/examples/sample-config-files/server.conf.gz /etc/openvpn/server/
+        sudo gunzip /etc/openvpn/server/server.conf.gz
+        ```
+
+    2.  **Edit the server configuration file (`/etc/openvpn/server/server.conf`):**
+
+        * Uncomment and adjust the following lines:
+
+            ```
+            local [server_ip_address] #Replace with the server's IP
+            port 1194
+            proto udp #or tcp
+            dev tun
+            ca ca.crt
+            cert server.crt
+            key server.key
+            dh dh.pem
+            server 10.8.0.0 255.255.255.0
+            push "redirect-gateway def1 bypass-dhcp"
+            push "dhcp-option DNS 8.8.8.8"
+            push "dhcp-option DNS 8.8.4.4"
+            keepalive 10 120
+            cipher AES-256-CBC
+            auth SHA256
+            user nobody
+            group nogroup
+            persist-key
+            persist-tun
+            status /var/log/openvpn-status.log
+            verb 3
+            ```
+
+    3.  **Enable IP forwarding:**
+
+        ```bash
+        sudo nano /etc/sysctl.conf
+        ```
+
+        * Uncomment `net.ipv4.ip_forward=1`.
+        * Apply the changes:
+
+            ```bash
+            sudo sysctl -p
+            ```
+
+    4.  **Configure NAT (Network Address Translation):**
+
+        ```bash
+        sudo iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE # eth0 might need to be changed to your network interface.
+        sudo sh -c "iptables-save > /etc/iptables.rules"
+        sudo nano /etc/network/interfaces
+        ```
+
+        * Add the following line to the end of the file:
+
+            ```
+            pre-up iptables-restore < /etc/iptables.rules
+            ```
+
+**5. Start the OpenVPN Server:**
+
+* **Commands:**
+
+    ```bash
+    sudo systemctl enable openvpn-server@server.service
+    sudo systemctl start openvpn-server@server.service
+    sudo systemctl status openvpn-server@server.service
+    ```
+
+**Part 2: OpenVPN Client Setup**
+
+**1. Install OpenVPN:**
+
+* **Commands (on the client):**
+
+    ```bash
+    sudo apt update
+    sudo apt install openvpn network-manager-openvpn network-manager-openvpn-gnome -y
+    ```
+
+**2. Copy Client Configuration Files:**
+
+* **Purpose:** Transfer the necessary files from the server to the client.
+* **Steps:**
+    1.  Copy the following files from the server's `/etc/openvpn/server` directory to the client:
+        * `ca.crt`
+        * `client1.crt`
+        * `client1.key`
+
+    2. create a client.ovpn file.
+        ```
+        client
+        dev tun
+        proto udp
+        remote [server_ip_address] 1194 #replace [server_ip_address]
+        resolv-retry infinite
+        nobind
+        persist-key
+        persist-tun
+        ca ca.crt
+        cert client1.crt
+        key client1.key
+        cipher AES-256-CBC
+        auth SHA256
+        remote-cert-tls server
+        ```
+
+    3. Place all 4 files in the same directory.
+
+**3. Connect to the OpenVPN Server (GUI):**
+
+* **Steps:**
+    1.  Open Network Manager.
+    2.  Add a VPN connection (Import from file) and select client.ovpn.
+    3.  Connect to the VPN.
+
+**4. Connect to the OpenVPN Server (Command-Line):**
+
+* **Commands:**
+
+    ```bash
+    sudo openvpn --config client.ovpn
+    ```
+
+**5. Verify the Connection:**
+
+* **Commands (on the client):**
+
+    ```bash
+    ip a
+    curl ifconfig.me
+    ```
+
+* **Commands (on the server):**
+
+    ```bash
+    sudo cat /var/log/openvpn-status.log
+    ```
