@@ -1,0 +1,119 @@
+
+
+**1. Prerequisites:**
+
+* Kali Linux system with a static IP address on your network.
+* Root or sudo privileges.
+* Basic understanding of command-line operations.
+* Clients on the local network that will need to connect to the SpiderFoot server.
+
+**2. Update and Upgrade Kali Linux:**
+
+* **Purpose:** Ensure your system is up-to-date.
+* **Commands:**
+
+    ```bash
+    sudo apt update
+    sudo apt upgrade -y
+    ```
+
+**3. Install SpiderFoot:**
+
+* **Purpose:** Download and install SpiderFoot.
+* **Steps:**
+    1.  **Download SpiderFoot:**
+
+        ```bash
+        wget https://github.com/smicallef/spiderfoot/archive/v3.5.tar.gz #Check for the newest version on the SpiderFoot Github page.
+        tar -xzf v3.5.tar.gz
+        cd spiderfoot-3.5/
+        ```
+
+    2.  **Install dependencies:**
+
+        ```bash
+        sudo pip3 install -r requirements.txt
+        ```
+
+**4. Configure SpiderFoot for Network Access:**
+
+* **Purpose:** Modify the SpiderFoot configuration to allow access from other machines on the network.
+* **Steps:**
+    1.  **Edit the `sf.py` script:**
+
+        ```bash
+        nano sf.py
+        ```
+
+    2.  **Modify the `listen_addr` variable:**
+
+        * Locate the line `listen_addr = "127.0.0.1"`.
+        * Change it to `listen_addr = "0.0.0.0"`. This allows SpiderFoot to listen on all network interfaces.
+        * Alternatively, if you want to bind it to a specific network interface, you can set it to the servers ip address.
+
+    3.  **Save and close the file.**
+
+**5. Start SpiderFoot as a Server:**
+
+* **Purpose:** Run SpiderFoot and make it accessible to clients.
+* **Commands:**
+
+    ```bash
+    python3 sf.py -l 0.0.0.0
+    ```
+    Or if you changed the sf.py file, simply:
+    ```bash
+    python3 sf.py
+    ```
+
+    * SpiderFoot will start and display its web interface address (e.g., `http://[Kali_Linux_IP]:5001`).
+
+**6. Access SpiderFoot from Client Machines:**
+
+* **Purpose:** Connect to the SpiderFoot web interface from other devices on the network.
+* **Steps:**
+    1.  **Open a web browser:** On a client machine on the same network.
+    2.  **Enter the SpiderFoot URL:** Type `http://[Kali_Linux_IP]:5001` into the address bar, replacing `[Kali_Linux_IP]` with the static IP address of your Kali Linux server.
+    3.  **Use SpiderFoot:** The SpiderFoot web interface should load, allowing you to start scans and access its features.
+
+**7. Run Spiderfoot as a systemd service (Optional):**
+
+* **Purpose:** Makes Spiderfoot run in the background, and start at boot.
+* **Steps:**
+    1. Create a systemd service file:
+        ```bash
+        sudo nano /etc/systemd/system/spiderfoot.service
+        ```
+    2. Paste the following into the file, replacing the path to the spiderfoot directory with your own.
+        ```
+        [Unit]
+        Description=SpiderFoot Server
+        After=network.target
+
+        [Service]
+        Type=simple
+        WorkingDirectory=/home/yourusername/spiderfoot-3.5/
+        ExecStart=/usr/bin/python3 sf.py
+        Restart=on-failure
+        User=yourusername
+
+        [Install]
+        WantedBy=multi-user.target
+        ```
+    3. Replace "yourusername" with your actual username.
+    4. Save and close the file.
+    5. Enable and start the service:
+        ```bash
+        sudo systemctl enable spiderfoot.service
+        sudo systemctl start spiderfoot.service
+        sudo systemctl status spiderfoot.service
+        ```
+
+**Important Considerations:**
+
+* **Firewall:** Ensure your Kali Linux firewall allows traffic on port 5001. You may need to add a rule:
+
+    ```bash
+    sudo ufw allow 5001
+    sudo ufw enable
+    ```
