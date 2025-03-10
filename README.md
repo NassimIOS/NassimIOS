@@ -1,7 +1,9 @@
 Hi ,
 This is my repo for the following:
 
-Projects in my free time
+OpenVPN Server and Client Deployment:
+Configured and deployed OpenVPN on Kali Linux, creating a secure VPN environment. This project involved certificate generation, server and client configuration, and network routing, demonstrating practical skills in secure network communication.
+Platforms and Technology Used: Kali Linux, OpenVPN, EasyRSA.
 
 Threat Detection and Response Framework
 Developed a home lab using Security Onion IDS and Elastic Cloud SIEM to monitor network traffic and create custom detection rules.
