@@ -1,0 +1,74 @@
+# Cost Savings with Intune: Web-based Microsoft 365 Apps
+
+## Introduction
+Many companies face pressure to reduce costs, and one way to do so is by adjusting Microsoft 365 licenses. Instead of using the full desktop versions of Office applications, a company can switch to the web-based versions. This significantly lowers licensing costs. Microsoft Intune offers an efficient way to manage this transition by making web apps easily available to users.
+
+## Advantages of a Web-based Implementation
+- **Lower Licensing Costs**: Using only web versions of Office apps means that less expensive licenses (such as Microsoft 365 F3 or Business Basic) are sufficient.
+- **Simpler Management**: There is no need to install Office apps, which reduces IT maintenance.
+- **Accessibility**: Users can work from anywhere without software installation, as long as they have a browser.
+
+## Implementation in Intune
+With Intune, administrators can quickly make web applications available by adding desktop shortcuts for the web versions of Microsoft 365 apps.
+
+### Step 1: Create a Policy in Intune
+1. Go to the **Microsoft Intune Admin Center**.
+2. Navigate to **Devices** > **Windows** > **Configuration**.
+3. Click on **Create (Policy)**.
+4. Choose **Platform**: *Windows 10 and later*.
+5. Choose **Profile type**: *Settings catalog*.
+6. Click on **Create** and fill in the basic information.
+7. Click on **Next**.
+
+### Step 2: Configure Web Apps
+1. Click on **+ Add settings**.
+2. Search for *Web app* and select **Microsoft Edge**.
+3. Check **Configure list of force-installed Web Apps**.
+4. (Optional) Add additional URLs for web apps that need to be silently installed on the device.
+5. Close the settings picker.
+
+### Step 3: Apply JSON Configuration
+Enable **Configure list of force-installed Web Apps** and fill in the field **URLs for Web Apps to be silently installed (Device)** with the following JSON:
+
+```json
+[
+  {
+    "create_desktop_shortcut": true,
+    "default_launch_container": "window",
+    "url": "https://outlook.office.com/mail"
+  },
+  {
+    "create_desktop_shortcut": true,
+    "default_launch_container": "window",
+    "url": "https://word.office.com/"
+  },
+  {
+    "create_desktop_shortcut": true,
+    "default_launch_container": "window",
+    "url": "https://excel.office.com/"
+  },
+  {
+    "create_desktop_shortcut": true,
+    "default_launch_container": "window",
+    "url": "https://powerpoint.office.com/"
+  },
+  {
+    "create_desktop_shortcut": true,
+    "default_launch_container": "window",
+    "url": "https://www.onenote.com/"
+  }
+]
+```
+
+### Step 4: Finalize the Policy
+1. Fill in the **Scope tags** according to the company's needs.
+2. Assign the policy to the appropriate groups under **Assignments**.
+3. Click on **Next** and then **Create** to deploy the policy.
+
+## Management and Monitoring
+- Use Intune to monitor the usage and adoption of web apps.
+- Adjust the settings based on user feedback.
+- Add additional shortcuts for company-specific web apps.
+
+## Conclusion
+By switching Microsoft 365 to a web-based experience via Intune, companies can significantly reduce licensing costs and simplify software management. With the configuration above, users can directly access their key Microsoft 365 applications from their desktop without the need for full installations.
