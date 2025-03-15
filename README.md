@@ -1,6 +1,10 @@
 Hi ,
 This is my repo for the following:
 
+Implementation of Web-Based Microsoft 365 Apps via Intune:
+Configured and deployed web-based versions of Microsoft 365 applications using Microsoft Intune, resulting in a cost-effective solution by reducing licensing expenses and simplifying application management. This project involved creating policies within Intune, configuring the forced installation of web apps, and utilizing JSON configurations to facilitate direct access to essential Microsoft 365 applications. This approach provided efficient and secure access to productivity tools without the need for local software installations.
+Platforms and Technologies Used: Microsoft Intune, Microsoft Edge, JSON
+
 OpenVPN Server and Client Deployment:
 Configured and deployed OpenVPN on Kali Linux, creating a secure VPN environment. This project involved certificate generation, server and client configuration, and network routing, demonstrating practical skills in secure network communication.
 Platforms and Technology Used: Kali Linux, OpenVPN, EasyRSA.
