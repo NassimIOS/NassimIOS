@@ -1,0 +1,16 @@
+# Open PowerShell tijdens een clean installatie met Win + Shift + F10
+
+# Stel de uitvoeringspolicy in zodat scripts uitgevoerd kunnen worden:
+Set-ExecutionPolicy Unrestricted -Force
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+
+# Installeer het Autopilot script
+Install-Script -Name Get-WindowsAutopilotInfo -Force
+
+# Haal de hardware hash op en upload deze online met een aangepaste grouptag
+Get-WindowsAutoPilotInfo -Online -GroupTag Entra
+
+# Log in met de juiste credentials om de upload te voltooien
+
+# Indien ESP is uitgerold in het Intune-portal:
+# Druk vijf keer op de Windows-toets tijdens het installatieproces om ESP te starten.
