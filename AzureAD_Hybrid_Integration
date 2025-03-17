@@ -1,0 +1,83 @@
+.SYNOPSIS
+    Hybride integratie tussen on-premises AD en Azure AD via Microsoft Entra Connect met Intune deployment ondersteuning,
+    waarbij er wordt gevraagd om in te loggen voor de verbinding met de on-premises Active Directory.
+
+.DESCRIPTION
+    Dit script demonstreert de volgende stappen:
+      1. Het vragen om AD-inloggegevens (Get-Credential) voor verbinding met de on-premises Active Directory.
+      2. Het ophalen van een computerobject uit AD met de opgegeven referenties.
+      3. Het genereren van een uniek apparaat-ID (optioneel) voor registratie.
+      4. Het triggeren van een synchronisatiecyclus (Delta) via Microsoft Entra Connect.
+      5. Het loggen van de synchronisatie-actie voor validatie.
+
+    De implementatie is gebaseerd op de laatste MS Learn-best practices voor hybride omgevingen en wordt ondersteund
+    door recente inzichten uit de community (bv. Reddit).
+
+.NOTES
+    Auteur       : Nassim Benali
+    Datum        : 17/03/2025
+    Referenties  :
+                   - Microsoft Intune Documentatie: https://learn.microsoft.com/en-us/mem/intune :contentReference[oaicite:0]{index=0}
+                   - Ervaringen met hybride AD/Intune (bijv. Reddit-discussies) :contentReference[oaicite:1]{index=1}
+    Vereisten    :
+                   - On-premises Active Directory (Windows Server 2008 R2 of later)
+                   - Microsoft Entra Connect correct geconfigureerd
+                   - Geldige Microsoft Entra (Azure AD) tenant met Intune-licenties
+                   - PowerShell 5.1+ en de ActiveDirectory-module geïnstalleerd
+#>
+
+# Prompt om AD inloggegevens te verkrijgen
+$ADCred = Get-Credential -Message "Voer de inloggegevens in voor uw on-premises Active Directory"
+
+# Configuratieparameters
+$ComputerName = $env:COMPUTERNAME
+$LocalDomainUser = "Administrator"   # Pas dit aan indien nodig
+
+Write-Output "Start hybride integratie: synchronisatie van on-prem AD naar Azure AD."
+
+# Stap 1: Haal het lokale computerobject op uit AD met de opgegeven referenties
+try {
+    Write-Output "Haal het computerobject op voor: $ComputerName met de opgegeven referenties."
+    $ComputerObject = Get-ADComputer -Identity $ComputerName -Credential $ADCred -ErrorAction Stop
+    Write-Output "Computerobject succesvol opgehaald: $ComputerName"
+} catch {
+    Write-Error "Fout bij ophalen van het computerobject: $_"
+    exit 1
+}
+
+# Stap 2: (Optioneel) Genereer een uniek apparaat-ID voor registratie in Azure AD/Intune
+function Generate-UniqueDeviceID {
+    [CmdletBinding()]
+    param (
+        [int]$Length = 12
+    )
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    $deviceID = -join ((1..$Length) | ForEach-Object { $chars[(Get-Random -Minimum 0 -Maximum $chars.Length)] })
+    return $deviceID
+}
+$DeviceID = Generate-UniqueDeviceID
+Write-Output "Gegenereerd apparaat-ID: $DeviceID"
+
+# Stap 3: Trigger een synchronisatiecyclus via Microsoft Entra Connect
+Write-Output "Start een Delta synchronisatiecyclus via Microsoft Entra Connect."
+try {
+    # Probeer de ADSync module te importeren (zorg dat deze geïnstalleerd is)
+    Import-Module ADSync -ErrorAction Stop
+    Start-AADSyncSyncCycle -PolicyType Delta
+    Write-Output "Delta synchronisatie succesvol gestart."
+} catch {
+    Write-Warning "Synchronisatie kon niet worden getriggerd. Controleer of de ADSync module aanwezig is en of u voldoende rechten hebt. Fout: $_"
+}
+
+# Stap 4: Log de synchronisatie-actie
+$LogPath = "C:\Logs\HybridSyncLog.txt"
+$LogEntry = "$(Get-Date) - Synchronisatie gestart voor $ComputerName met apparaat-ID: $DeviceID"
+try {
+    if (-not (Test-Path "C:\Logs")) { New-Item -Path "C:\Logs" -ItemType Directory -Force }
+    Add-Content -Path $LogPath -Value $LogEntry
+    Write-Output "Synchronisatie log succesvol bijgewerkt: $LogPath"
+} catch {
+    Write-Warning "Fout bij het loggen van de synchronisatie-actie: $_"
+}
+
+Write-Output "Hybride integratie voltooid. Controleer de synchronisatie in de Azure AD tenant en de Intune portal voor bevestiging."
